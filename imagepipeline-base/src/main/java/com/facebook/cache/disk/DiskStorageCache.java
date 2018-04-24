@@ -1,32 +1,13 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.cache.disk;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.GuardedBy;
-import javax.annotation.concurrent.ThreadSafe;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
 import android.content.Context;
-
 import com.facebook.binaryresource.BinaryResource;
 import com.facebook.cache.common.CacheErrorLogger;
 import com.facebook.cache.common.CacheEventListener;
@@ -40,6 +21,19 @@ import com.facebook.common.logging.FLog;
 import com.facebook.common.statfs.StatFsHelper;
 import com.facebook.common.time.Clock;
 import com.facebook.common.time.SystemClock;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.GuardedBy;
+import javax.annotation.concurrent.ThreadSafe;
 
 /**
  * Cache that manages disk storage.
@@ -72,7 +66,6 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
   // All resourceId stored on disk (if any).
   @VisibleForTesting final Set<String> mResourceIndex;
 
-  @GuardedBy("mLock")
   private long mCacheSizeLastUpdateTime;
 
   private final long mCacheSizeLimitMinimum;
@@ -199,20 +192,13 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
           synchronized (mLock) {
             maybeUpdateFileCacheSize();
           }
+          mIndexReady = true;
           mCountDownLatch.countDown();
         }
       });
     } else {
       mCountDownLatch = new CountDownLatch(0);
     }
-
-    executorForBackgrountInit.execute(new Runnable() {
-
-      @Override
-      public void run() {
-        maybeDeleteSharedPreferencesFile(context, mStorage.getStorageName());
-      }
-    });
   }
 
   @Override
@@ -756,8 +742,6 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
       }
       if (mCacheStats.getCount() != count || mCacheStats.getSize() != size) {
         if (mIndexPopulateAtStartupEnabled && mResourceIndex != tempResourceIndex) {
-          mIndexReady = true;
-        } else if (mIndexPopulateAtStartupEnabled) {
           mResourceIndex.clear();
           mResourceIndex.addAll(tempResourceIndex);
         }
@@ -773,27 +757,5 @@ public class DiskStorageCache implements FileCache, DiskTrimmable {
     }
     mCacheSizeLastUpdateTime = now;
     return true;
-  }
-
-  //TODO(t12287315): Remove the temp method for deleting created Preference in next release
-  private static void maybeDeleteSharedPreferencesFile(
-      Context context,
-      String directoryName) {
-    Context applicationContext = context.getApplicationContext();
-    String path =
-        applicationContext.getFilesDir().getParent()
-            + File.separator
-            + "shared_prefs"
-            + File.separator
-            + SHARED_PREFS_FILENAME_PREFIX
-            + directoryName;
-    File file = new File(path + ".xml");
-    try {
-      if (file.exists()) {
-        file.delete();
-      }
-    } catch (Exception e) {
-      FLog.e(TAG, "Fail to delete SharedPreference from file system. ");
-    }
   }
 }

@@ -1,34 +1,28 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 package com.facebook.imagepipeline.bitmaps;
 
+import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.Build;
-
+import com.facebook.common.memory.PooledByteBuffer;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.common.webp.BitmapCreator;
 import com.facebook.imageformat.DefaultImageFormats;
 import com.facebook.imagepipeline.image.EncodedImage;
 import com.facebook.imagepipeline.memory.FlexByteArrayPool;
 import com.facebook.imagepipeline.memory.PoolFactory;
-import com.facebook.imagepipeline.memory.PooledByteBuffer;
-import com.facebook.imageutils.JfifUtil;
 
 /**
  * This is the implementation of the BitmapCreator for the Honeycomb
  */
 public class HoneycombBitmapCreator implements BitmapCreator {
-
-  protected static final byte[] EOI = new byte[]{
-      (byte) JfifUtil.MARKER_FIRST_BYTE, (byte) JfifUtil.MARKER_EOI};
 
   private final EmptyJpegGenerator mJpegGenerator;
   private final FlexByteArrayPool mFlexByteArrayPool;
@@ -38,6 +32,7 @@ public class HoneycombBitmapCreator implements BitmapCreator {
     mJpegGenerator = new EmptyJpegGenerator(poolFactory.getPooledByteBufferFactory());
   }
 
+  @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
   @Override
   public Bitmap createNakedBitmap(
       int width, int height, Bitmap.Config bitmapConfig) {
@@ -53,21 +48,17 @@ public class HoneycombBitmapCreator implements BitmapCreator {
           encodedImage.getSampleSize(),
           bitmapConfig);
       int length = jpgRef.get().size();
-      byte[] suffix = endsWithEOI(jpgRef, length) ? null : EOI;
       final PooledByteBuffer pooledByteBuffer = jpgRef.get();
       encodedBytesArrayRef =
           mFlexByteArrayPool.get(length + 2);
       byte[] encodedBytesArray = encodedBytesArrayRef.get();
       pooledByteBuffer.read(0, encodedBytesArray, 0, length);
-      if (suffix != null) {
-        putEOI(encodedBytesArray, length);
-        length += 2;
-      }
       Bitmap bitmap = BitmapFactory.decodeByteArray(
           encodedBytesArray,
           0,
           length,
           options);
+      bitmap.setHasAlpha(true);
       bitmap.eraseColor(Color.TRANSPARENT);
       return bitmap;
     } finally {
@@ -93,18 +84,5 @@ public class HoneycombBitmapCreator implements BitmapCreator {
       options.inMutable = true;  // no known perf difference; allows postprocessing to work
     }
     return options;
-  }
-
-  private static void putEOI(byte[] imageBytes, int offset) {
-    // TODO 5884402: remove dependency on JfifUtil
-    imageBytes[offset] = (byte) JfifUtil.MARKER_FIRST_BYTE;
-    imageBytes[offset + 1] = (byte) JfifUtil.MARKER_EOI;
-  }
-
-  protected static boolean endsWithEOI(CloseableReference<PooledByteBuffer> bytesRef, int length) {
-    PooledByteBuffer buffer = bytesRef.get();
-    return length >= 2 &&
-        buffer.read(length - 2) == (byte) JfifUtil.MARKER_FIRST_BYTE &&
-        buffer.read(length - 1) == (byte) JfifUtil.MARKER_EOI;
   }
 }

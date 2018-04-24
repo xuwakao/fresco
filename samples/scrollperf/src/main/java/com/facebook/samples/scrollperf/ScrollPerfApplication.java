@@ -12,8 +12,8 @@
 package com.facebook.samples.scrollperf;
 
 import android.app.Application;
-
 import com.facebook.common.webp.WebpSupportStatus;
+import com.facebook.drawee.backends.pipeline.DraweeConfig;
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.imagepipeline.core.DefaultExecutorSupplier;
 import com.facebook.imagepipeline.core.ImagePipelineConfig;
@@ -33,6 +33,9 @@ public class ScrollPerfApplication extends Application {
     ImagePipelineConfig.Builder imagePipelineConfigBuilder = ImagePipelineConfig.newBuilder(this)
         .setResizeAndRotateEnabledForNetwork(false)
         .setDownsampleEnabled(config.downsampling);
+    if (WebpSupportStatus.sIsWebpSupportRequired) {
+      imagePipelineConfigBuilder.experiment().setWebpSupportEnabled(config.webpSupportEnabled);
+    }
     if (config.decodingThreadCount == 0) {
       imagePipelineConfigBuilder.setExecutorSupplier(
           new DefaultExecutorSupplier(Const.NUMBER_OF_PROCESSORS));
@@ -40,10 +43,10 @@ public class ScrollPerfApplication extends Application {
       imagePipelineConfigBuilder.setExecutorSupplier(
           new ScrollPerfExecutorSupplier(Const.NUMBER_OF_PROCESSORS, config.decodingThreadCount));
     }
-    if (WebpSupportStatus.sIsWebpSupportRequired) {
-      imagePipelineConfigBuilder.experiment().setWebpSupportEnabled(config.webpSupportEnabled);
-    }
     imagePipelineConfigBuilder.experiment().setDecodeCancellationEnabled(config.decodeCancellation);
-    Fresco.initialize(this, imagePipelineConfigBuilder.build());
+    DraweeConfig draweeConfig = DraweeConfig.newBuilder()
+        .setDrawDebugOverlay(config.draweeOverlayEnabled)
+        .build();
+    Fresco.initialize(this, imagePipelineConfigBuilder.build(), draweeConfig);
   }
 }

@@ -1,52 +1,30 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 package com.facebook.fresco.animation.backend;
-
-import javax.annotation.Nullable;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.IntRange;
+import javax.annotation.Nullable;
 
 /**
  * Animation backend interface that is used to draw frames.
  */
-public interface AnimationBackend {
+public interface AnimationBackend extends AnimationInformation {
 
   /**
-   * Loop count to be returned by {@link #getLoopCount()} when the animation should be repeated
-   * indefinitely.
-   */
-  int LOOP_COUNT_INFINITE = 0;
-
-  /**
-   * Get the number of frames for the animation
-   * @return the number of frames
-   */
-  int getFrameCount();
-
-  /**
-   * Get the frame duration for a given frame number in milliseconds.
+   * Default value if the intrinsic dimensions are not set.
    *
-   * @param frameNumber the frame to get the duration for
-   * @return the duration in ms
+   * @see #getIntrinsicWidth()
+   * @see #getIntrinsicHeight()
    */
-  int getFrameDurationMs(int frameNumber);
-
-  /**
-   * Get the number of loops the animation has or {@link #LOOP_COUNT_INFINITE} for infinite.
-   *
-   * @return the loop count
-   */
-  int getLoopCount();
+  int INTRINSIC_DIMENSION_UNSET = -1;
 
   /**
    * Draw the frame for the given frame number on the canvas.
@@ -64,7 +42,7 @@ public interface AnimationBackend {
    *
    * @param alpha the alpha value between 0 and 255
    */
-  void setAlpha(@IntRange(from=0,to=255) int alpha);
+  void setAlpha(@IntRange(from = 0, to = 255) int alpha);
 
   /**
    * The color filter to be used for drawing frames in {@link #drawFrame(Drawable, Canvas, int)}
@@ -87,9 +65,37 @@ public interface AnimationBackend {
   void setBounds(Rect bounds);
 
   /**
-   * Get the size of the animation backend.
-   * @return the size in bytes
+   * Get the intrinsic width of the underlying animation or
+   * {@link #INTRINSIC_DIMENSION_UNSET} if not available.
    *
+   * This value is used by the underlying drawable for aspect ratio computations,
+   * similar to {@link Drawable#getIntrinsicWidth()}.
+   *
+   * @return the width or {@link #INTRINSIC_DIMENSION_UNSET} if unset
+   */
+  int getIntrinsicWidth();
+
+  /**
+   * Get the intrinsic height of the underlying animation or
+   * {@link #INTRINSIC_DIMENSION_UNSET} if not available.
+   *
+   * This value is used by the underlying drawable for aspect ratio computations,
+   * similar to {@link Drawable#getIntrinsicHeight()}.
+   *
+   * @return the height or {@link #INTRINSIC_DIMENSION_UNSET} if unset
+   */
+  int getIntrinsicHeight();
+
+  /**
+   * Get the size of the animation backend.
+   *
+   * @return the size in bytes
    */
   int getSizeInBytes();
+
+  /**
+   * Clean up animation data. This will be called when the backing drawable is cleared as well.
+   * For example, drop all cached frames.
+   */
+  void clear();
 }

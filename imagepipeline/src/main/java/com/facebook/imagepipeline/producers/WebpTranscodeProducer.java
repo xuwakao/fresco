@@ -1,37 +1,27 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.imagepipeline.producers;
 
-import javax.annotation.Nullable;
-
-import java.io.InputStream;
-import java.lang.annotation.Retention;
-import java.util.concurrent.Executor;
-
-import android.support.annotation.IntDef;
-
 import com.facebook.common.internal.Preconditions;
+import com.facebook.common.memory.PooledByteBuffer;
+import com.facebook.common.memory.PooledByteBufferFactory;
+import com.facebook.common.memory.PooledByteBufferOutputStream;
 import com.facebook.common.references.CloseableReference;
 import com.facebook.common.util.TriState;
 import com.facebook.imageformat.DefaultImageFormats;
 import com.facebook.imageformat.ImageFormat;
 import com.facebook.imageformat.ImageFormatChecker;
 import com.facebook.imagepipeline.image.EncodedImage;
-import com.facebook.imagepipeline.memory.PooledByteBuffer;
-import com.facebook.imagepipeline.memory.PooledByteBufferFactory;
-import com.facebook.imagepipeline.memory.PooledByteBufferOutputStream;
-
-import com.facebook.imagepipeline.nativecode.WebpTranscoderFactory;
 import com.facebook.imagepipeline.nativecode.WebpTranscoder;
-
-import static java.lang.annotation.RetentionPolicy.SOURCE;
+import com.facebook.imagepipeline.nativecode.WebpTranscoderFactory;
+import java.io.InputStream;
+import java.util.concurrent.Executor;
+import javax.annotation.Nullable;
 
 /**
  * Transcodes WebP to JPEG / PNG.
@@ -44,28 +34,19 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 public class WebpTranscodeProducer implements Producer<EncodedImage> {
   public static final String PRODUCER_NAME = "WebpTranscodeProducer";
 
-  @Retention(SOURCE)
-  @IntDef({JPEG_WEBP_ENHANCED_TYPE, PNG_WEBP_ENHANCED_TYPE})
-  public @interface EnhancedTranscodingType {}
-  public static final int JPEG_WEBP_ENHANCED_TYPE = 0;
-  public static final int PNG_WEBP_ENHANCED_TYPE = 1;
-
   private static final int DEFAULT_JPEG_QUALITY = 80;
 
   private final Executor mExecutor;
   private final PooledByteBufferFactory mPooledByteBufferFactory;
   private final Producer<EncodedImage> mInputProducer;
-  private final @EnhancedTranscodingType int mEnhancedTranscodingType;
 
   public WebpTranscodeProducer(
       Executor executor,
       PooledByteBufferFactory pooledByteBufferFactory,
-      Producer<EncodedImage> inputProducer,
-      @EnhancedTranscodingType int enhancedTranscodingType) {
+      Producer<EncodedImage> inputProducer) {
     mExecutor = Preconditions.checkNotNull(executor);
     mPooledByteBufferFactory = Preconditions.checkNotNull(pooledByteBufferFactory);
     mInputProducer = Preconditions.checkNotNull(inputProducer);
-    mEnhancedTranscodingType = enhancedTranscodingType;
   }
 
   @Override
@@ -86,7 +67,7 @@ public class WebpTranscodeProducer implements Producer<EncodedImage> {
     }
 
     @Override
-    protected void onNewResultImpl(@Nullable EncodedImage newResult, boolean isLast) {
+    protected void onNewResultImpl(@Nullable EncodedImage newResult, @Status int status) {
       // try to determine if the last result should be transformed
       if (mShouldTranscodeWhenFinished == TriState.UNSET && newResult != null) {
         mShouldTranscodeWhenFinished = shouldTranscode(newResult);
@@ -94,15 +75,15 @@ public class WebpTranscodeProducer implements Producer<EncodedImage> {
 
       // just propagate result if it shouldn't be transformed
       if (mShouldTranscodeWhenFinished == TriState.NO) {
-        getConsumer().onNewResult(newResult, isLast);
+        getConsumer().onNewResult(newResult, status);
         return;
       }
 
-      if (isLast) {
+      if (isLast(status)) {
         if (mShouldTranscodeWhenFinished == TriState.YES && newResult != null) {
           transcodeLastResult(newResult, getConsumer(), mContext);
         } else {
-          getConsumer().onNewResult(newResult, isLast);
+          getConsumer().onNewResult(newResult, status);
         }
       }
     }
@@ -124,7 +105,7 @@ public class WebpTranscodeProducer implements Producer<EncodedImage> {
           protected EncodedImage getResult() throws Exception {
             PooledByteBufferOutputStream outputStream = mPooledByteBufferFactory.newOutputStream();
             try {
-              doTranscode(encodedImageCopy, outputStream, mEnhancedTranscodingType);
+              doTranscode(encodedImageCopy, outputStream);
               CloseableReference<PooledByteBuffer> ref =
                   CloseableReference.of(outputStream.toByteBuffer());
               try {
@@ -187,27 +168,22 @@ public class WebpTranscodeProducer implements Producer<EncodedImage> {
 
   private static void doTranscode(
       final EncodedImage encodedImage,
-      final PooledByteBufferOutputStream outputStream,
-      final @EnhancedTranscodingType int enhancedWebpTranscodingType) throws Exception {
+      final PooledByteBufferOutputStream outputStream) throws Exception {
     InputStream imageInputStream = encodedImage.getInputStream();
     ImageFormat imageFormat = ImageFormatChecker.getImageFormat_WrapIOException(imageInputStream);
     if (imageFormat == DefaultImageFormats.WEBP_SIMPLE ||
         imageFormat == DefaultImageFormats.WEBP_EXTENDED) {
-      // In this case we transcode to JPG or PNG depending on the experiment value
-      if (PNG_WEBP_ENHANCED_TYPE == enhancedWebpTranscodingType) {
-        WebpTranscoderFactory.getWebpTranscoder()
-            .transcodeWebpToPng(imageInputStream, outputStream);
-      } else {
         WebpTranscoderFactory.getWebpTranscoder().transcodeWebpToJpeg(
             imageInputStream,
             outputStream,
             DEFAULT_JPEG_QUALITY);
-      }
+      encodedImage.setImageFormat(DefaultImageFormats.JPEG);
     } else if (imageFormat == DefaultImageFormats.WEBP_LOSSLESS ||
         imageFormat == DefaultImageFormats.WEBP_EXTENDED_WITH_ALPHA) {
       // In this case we always transcode to PNG
       WebpTranscoderFactory.getWebpTranscoder()
           .transcodeWebpToPng(imageInputStream, outputStream);
+      encodedImage.setImageFormat(DefaultImageFormats.PNG);
     } else {
       throw new IllegalArgumentException("Wrong image format");
     }

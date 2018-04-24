@@ -1,10 +1,8 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.imageformat;
@@ -37,23 +35,6 @@ public class ImageFormat {
 
   // Unknown image format
   public static final ImageFormat UNKNOWN = new ImageFormat("UNKNOWN", null);
-
-  /**
-   * Maps an image format to the file extension.
-   * Deprecated. Use {@link #getFileExtension()} instead.
-   * @param imageFormat image format
-   * @return  file extension for the image format
-   * @throws UnsupportedOperationException
-   */
-  @Deprecated
-  public static String getFileExtension(ImageFormat imageFormat)
-      throws UnsupportedOperationException {
-    String extension = imageFormat.getFileExtension();
-    if (extension == null) {
-      throw new UnsupportedOperationException("Unknown image format " + imageFormat.getName());
-    }
-    return extension;
-  }
 
   private final String mFileExtension;
   private final String mName;

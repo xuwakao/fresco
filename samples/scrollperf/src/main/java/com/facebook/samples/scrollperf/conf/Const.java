@@ -22,6 +22,7 @@ public final class Const {
 
   public static final String LOCAL_RESOURCE_URIS = "local_resource_uris";
   public static final String LOCAL_RESOURCE_WEBP_URIS = "local_resource_webp_uris";
+  public static final String LOCAL_RESOURCE_PNG_URIS = "local_resource_png_uris";
   public static final String LOCAL_INTERNAL_PHOTO_URIS = "local_internal_photo_uris";
   public static final String LOCAL_EXTERNAL_PHOTO_URIS = "local_external_photo_uris";
 
@@ -56,9 +57,14 @@ public final class Const {
   public static final String FADE_DURATION_KEY = "fade_duration";
   public static final String DRAW_BORDER_KEY = "draw_border";
   public static final String GRID_SPAN_COUNT_KEY= "grid_span_count_key";
+  public static final String BG_COLOR_KEY = "bg_color_key";
 
-  public static final String DECODING_THREAD_KEY= "decoding_thread_key";
   public static final String WEBP_SUPPORT_KEY = "webp_support_key";
 
+  public static final String DECODING_THREAD_KEY= "decoding_thread_key";
+
   public static final String DECODE_CANCELLATION_KEY= "decode_cancellation_key";
+
+  public static final String DRAWEE_OVERLAY_KEY= "drawee_overlay_key";
+  public static final String INSTRUMENTATION_ENABLED_KEY= "instrumentation_key";
 }

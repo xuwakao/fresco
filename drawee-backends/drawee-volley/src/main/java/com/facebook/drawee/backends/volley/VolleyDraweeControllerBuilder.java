@@ -1,10 +1,8 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.drawee.backends.volley;
@@ -12,14 +10,12 @@ package com.facebook.drawee.backends.volley;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
-
 import com.android.volley.toolbox.ImageLoader;
 import com.facebook.common.internal.Preconditions;
 import com.facebook.datasource.DataSource;
 import com.facebook.drawee.controller.AbstractDraweeControllerBuilder;
 import com.facebook.drawee.controller.ControllerListener;
 import com.facebook.drawee.interfaces.DraweeController;
-
 import java.util.Set;
 
 /**
@@ -49,23 +45,22 @@ public class VolleyDraweeControllerBuilder extends AbstractDraweeControllerBuild
   protected VolleyDraweeController obtainController() {
     DraweeController oldController = getOldController();
     VolleyDraweeController controller;
+    String controllerId = generateUniqueControllerId();
     if (oldController instanceof VolleyDraweeController) {
       controller = (VolleyDraweeController) oldController;
       controller.initialize(
-          obtainDataSourceSupplier(),
-          generateUniqueControllerId(),
-          getCallerContext());
+          obtainDataSourceSupplier(controllerId), controllerId, getCallerContext());
     } else {
-      controller = mVolleyDraweeControllerFactory.newController(
-          obtainDataSourceSupplier(),
-          generateUniqueControllerId(),
-          getCallerContext());
+      controller =
+          mVolleyDraweeControllerFactory.newController(
+              obtainDataSourceSupplier(controllerId), controllerId, getCallerContext());
     }
     return controller;
   }
 
   @Override
   protected DataSource<Bitmap> getDataSourceForRequest(
+      final String controllerId,
       final Uri imageRequest,
       final Object callerContext,
       final CacheLevel cacheLevel) {
@@ -81,10 +76,5 @@ public class VolleyDraweeControllerBuilder extends AbstractDraweeControllerBuild
   public VolleyDraweeControllerBuilder setUri(String uriString) {
     Preconditions.checkNotNull(uriString);
     return setImageRequest(Uri.parse(uriString));
-  }
-
-  @Override
-  protected VolleyDraweeControllerBuilder getThis() {
-    return this;
   }
 }

@@ -1,19 +1,17 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.imagepipeline.common;
 
-import java.util.Locale;
-
 import com.facebook.common.internal.Preconditions;
 import com.facebook.common.util.HashCodeUtil;
 import com.facebook.imageutils.BitmapUtil;
+import java.util.Locale;
+import javax.annotation.Nullable;
 
 /**
  * Options for resizing.
@@ -36,6 +34,26 @@ public class ResizeOptions {
 
   /* round-up fraction for resize process, defaults to DEFAULT_ROUNDUP_FRACTION */
   public final float roundUpFraction;
+
+  /**
+   * @return new ResizeOptions, if the width and height values are valid, and null otherwise
+   */
+  public @Nullable static ResizeOptions forDimensions(int width, int height) {
+    if (width <= 0 || height <= 0) {
+      return null;
+    }
+    return new ResizeOptions(width, height);
+  }
+
+  /**
+   * @return new ResizeOptions, if the width and height values are valid, and null otherwise
+   */
+  public @Nullable static ResizeOptions forSquareSize(int size) {
+    if (size <= 0) {
+      return null;
+    }
+    return new ResizeOptions(size, size);
+  }
 
   public ResizeOptions(
       int width,

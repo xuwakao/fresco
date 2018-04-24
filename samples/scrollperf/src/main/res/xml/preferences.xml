@@ -109,6 +109,18 @@
             android:key="scale_type"
             android:title="@string/title_preferences_scale_type"
             />
+        <ListPreference
+            android:defaultValue="0"
+            android:dialogTitle="@string/title_bg_color"
+            android:entries="@array/bg_color_labels"
+            android:entryValues="@array/bg_color_values"
+            android:key="bg_color_key"
+            android:title="@string/title_bg_color"
+        />
+        <CheckBoxPreference
+            android:key="drawee_overlay_key"
+            android:title="@string/title_drawee_overlay"
+            />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="key_preferences_recycler_layout"
@@ -135,6 +147,10 @@
         android:key="key_preferences_various_group"
         android:title="@string/title_other_group"
         >
+        <CheckBoxPreference
+            android:key="instrumentation_key"
+            android:title="@string/title_instrumentation"
+        />
         <CheckBoxPreference
             android:key="webp_support_key"
             android:title="@string/title_webp_support"

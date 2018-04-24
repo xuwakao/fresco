@@ -1,48 +1,11 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 package com.facebook.imagepipeline.core;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import android.net.Uri;
-
-import com.facebook.cache.common.CacheKey;
-import com.facebook.cache.common.MultiCacheKey;
-import com.facebook.cache.common.SimpleCacheKey;
-import com.facebook.common.internal.Sets;
-import com.facebook.common.internal.Supplier;
-import com.facebook.common.references.CloseableReference;
-import com.facebook.datasource.DataSource;
-import com.facebook.imagepipeline.cache.BitmapMemoryCacheKey;
-import com.facebook.imagepipeline.cache.BufferedDiskCache;
-import com.facebook.imagepipeline.cache.CacheKeyFactory;
-import com.facebook.imagepipeline.cache.MemoryCache;
-import com.facebook.imagepipeline.common.Priority;
-import com.facebook.imagepipeline.image.CloseableImage;
-import com.facebook.imagepipeline.listener.RequestListener;
-import com.facebook.imagepipeline.memory.PooledByteBuffer;
-import com.facebook.imagepipeline.producers.Consumer;
-import com.facebook.imagepipeline.producers.Producer;
-import com.facebook.imagepipeline.producers.ProducerContext;
-import com.facebook.imagepipeline.producers.ThreadHandoffProducerQueue;
-import com.facebook.imagepipeline.request.ImageRequest;
-
-import com.android.internal.util.Predicate;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.robolectric.RobolectricTestRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -55,6 +18,38 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
+import android.net.Uri;
+import com.android.internal.util.Predicate;
+import com.facebook.cache.common.CacheKey;
+import com.facebook.cache.common.MultiCacheKey;
+import com.facebook.cache.common.SimpleCacheKey;
+import com.facebook.common.internal.Sets;
+import com.facebook.common.internal.Supplier;
+import com.facebook.common.memory.PooledByteBuffer;
+import com.facebook.common.references.CloseableReference;
+import com.facebook.datasource.DataSource;
+import com.facebook.imagepipeline.cache.BitmapMemoryCacheKey;
+import com.facebook.imagepipeline.cache.BufferedDiskCache;
+import com.facebook.imagepipeline.cache.CacheKeyFactory;
+import com.facebook.imagepipeline.cache.MemoryCache;
+import com.facebook.imagepipeline.common.Priority;
+import com.facebook.imagepipeline.image.CloseableImage;
+import com.facebook.imagepipeline.listener.RequestListener;
+import com.facebook.imagepipeline.producers.Consumer;
+import com.facebook.imagepipeline.producers.Producer;
+import com.facebook.imagepipeline.producers.ProducerContext;
+import com.facebook.imagepipeline.producers.ThreadHandoffProducerQueue;
+import com.facebook.imagepipeline.request.ImageRequest;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.robolectric.RobolectricTestRunner;
 
 /**
  * Tests for ImagePipeline
@@ -341,7 +336,10 @@ public class ImagePipelineTest {
   @Test
   public void testGetBitmapCacheGetSupplier() {
     Supplier<DataSource<CloseableReference<CloseableImage>>> dataSourceSupplier =
-        mImagePipeline.getDataSourceSupplier(mImageRequest, mCallerContext, true);
+        mImagePipeline.getDataSourceSupplier(
+            mImageRequest,
+            mCallerContext,
+            ImageRequest.RequestLevel.BITMAP_MEMORY_CACHE);
     Producer<CloseableReference<CloseableImage>> bitmapCacheSequence = mock(Producer.class);
     when(mProducerSequenceFactory.getDecodedImageProducerSequence(mImageRequest))
         .thenReturn(bitmapCacheSequence);
@@ -358,8 +356,8 @@ public class ImagePipelineTest {
 
   @Test
   public void testGetFullFetchSupplier() {
-    Supplier<DataSource<CloseableReference<CloseableImage>>> dataSourceSupplier =
-        mImagePipeline.getDataSourceSupplier(mImageRequest, mCallerContext, false);
+    Supplier<DataSource<CloseableReference<CloseableImage>>> dataSourceSupplier = mImagePipeline
+        .getDataSourceSupplier(mImageRequest, mCallerContext, ImageRequest.RequestLevel.FULL_FETCH);
     Producer<CloseableReference<CloseableImage>> decodedSequence = mock(Producer.class);
     when(mProducerSequenceFactory.getDecodedImageProducerSequence(mImageRequest))
         .thenReturn(decodedSequence);

@@ -1,10 +1,8 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 
 #include <android/bitmap.h>
@@ -95,7 +93,7 @@ static void setBitmapSize(JNIEnv* env, jobject bitmapOptions, int image_width, i
 }
 
 static jobject createBitmap(JNIEnv* env, int image_width, int image_height, jobject bitmapOptions) {
-  jobject bitmap = env->CallStaticObjectMethod(bitmapClass, createBitmapFunction, image_width, image_height, bitmapOptions);
+  jobject bitmap = env->CallStaticObjectMethod(webpBitmapFactoryClass, createBitmapFunction, image_width, image_height, bitmapOptions);
   return bitmap;
 }
 
@@ -145,7 +143,7 @@ jobject doDecode(
     return JNI_FALSE;
   }
 
-  config.output.colorspace = MODE_RGBA;
+  config.output.colorspace = MODE_rgbA;
   config.output.u.RGBA.rgba = (uint8_t*) raw_pixels;
   config.output.u.RGBA.stride = image_width * 4;
   config.output.u.RGBA.size = image_width * image_height * 4;

@@ -1,28 +1,24 @@
 /*
  * Copyright (c) 2015-present, Facebook, Inc.
- * All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
  */
 package com.facebook.imagepipeline.producers;
-
-
 
 import com.facebook.common.internal.Preconditions;
 import com.facebook.common.internal.VisibleForTesting;
 import com.facebook.common.logging.FLog;
 import com.facebook.imageformat.DefaultImageFormats;
-import com.facebook.imagepipeline.image.EncodedImage;
 import com.facebook.imagepipeline.common.ResizeOptions;
+import com.facebook.imagepipeline.image.EncodedImage;
 import com.facebook.imagepipeline.request.ImageRequest;
+import com.facebook.imageutils.BitmapUtil;
 
 public class DownsampleUtil {
 
-  private static final float MAX_BITMAP_SIZE = 2048f;
+  public static final int DEFAULT_SAMPLE_SIZE = 1;
   private static final float INTERVAL_ROUNDING = 1.0f/3;
-  private static final int DEFAULT_SAMPLE_SIZE = 1;
 
   private DownsampleUtil() {}
 
@@ -49,7 +45,11 @@ public class DownsampleUtil {
     // Check the case when the dimension of the downsampled image is still larger than the max
     // possible dimension for an image.
     int maxDimension = Math.max(encodedImage.getHeight(), encodedImage.getWidth());
-    while (maxDimension / sampleSize > MAX_BITMAP_SIZE) {
+    final ResizeOptions resizeOptions = imageRequest.getResizeOptions();
+    final float maxBitmapSize = resizeOptions != null
+        ? resizeOptions.maxBitmapSize
+        : BitmapUtil.MAX_BITMAP_SIZE;
+    while (maxDimension / sampleSize > maxBitmapSize) {
       if (encodedImage.getImageFormat() == DefaultImageFormats.JPEG) {
         sampleSize *= 2;
       } else {
